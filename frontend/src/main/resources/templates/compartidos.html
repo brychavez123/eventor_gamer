@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos :: cabecera('Comunidad')}"></head>
+<body>
+<header th:replace="~{fragmentos :: menu}"></header>
+
+<main class="contenedor">
+    <section class="seccion">
+        <h1>Muro de la comunidad</h1>
+        <p class="subtitulo">Eventos que los jugadores compartieron en Arena Estratega.</p>
+
+        <p th:if="${publicaciones.isEmpty()}" class="vacio">
+            Aún no hay publicaciones. Entra a un evento y usa "Publicar en el muro".
+        </p>
+
+        <div class="muro">
+            <article class="publicacion" th:each="p : ${publicaciones}">
+                <p class="publicacion__cabecera">
+                    <strong th:text="${p.autor}">usuario</strong> compartió
+                    <a th:href="@{/evento/{id}(id=${p.eventoId})}" th:text="${p.eventoNombre}">Evento</a>
+                </p>
+                <p class="publicacion__mensaje" th:if="${p.mensaje}" th:text="${p.mensaje}">Mensaje</p>
+                <time class="seccion__nota" th:text="${#temporals.format(p.fecha, 'dd-MM-yyyy HH:mm')}">fecha</time>
+            </article>
+        </div>
+    </section>
+</main>
+
+<footer th:replace="~{fragmentos :: pie}"></footer>
+</body>
+</html>

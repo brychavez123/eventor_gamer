@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos :: cabecera(${evento.nombre})}"></head>
+<body>
+<header th:replace="~{fragmentos :: menu}"></header>
+
+<main class="contenedor">
+    <nav class="migas" aria-label="Ruta"><a th:href="@{/}">Inicio</a> / <a th:href="@{/buscar}">Eventos</a> /
+        <span th:text="${evento.nombre}">Evento</span></nav>
+
+    <article class="detalle">
+        <img class="detalle__portada" th:with="rutaImagen=${@vistas.imagen(evento.imagenPortada)}" th:src="@{${rutaImagen}}" alt="">
+
+        <div class="detalle__cabecera">
+            <div class="etiquetas">
+                <span class="etiqueta" th:text="${evento.categoria}">Torneo</span>
+                <span class="etiqueta"
+                      th:classappend="${evento.modalidad == 'ONLINE'} ? 'etiqueta--online' : 'etiqueta--presencial'"
+                      th:text="${@vistas.modalidad(evento.modalidad)}">Presencial</span>
+            </div>
+            <h1 th:text="${evento.nombre}">Nombre del evento</h1>
+            <p class="detalle__juego" th:text="${evento.videojuego}">Videojuego</p>
+        </div>
+
+        <div class="detalle__grilla">
+            <section class="detalle__principal">
+                <h2>Descripción</h2>
+                <p th:text="${evento.descripcion}">Descripción</p>
+
+                <h2>Requisitos de participación</h2>
+                <p th:text="${evento.requisitos}">Requisitos</p>
+
+                <h2>Inscripción</h2>
+                <p th:text="${evento.inscripcion}">Información de inscripción</p>
+
+                <h2 th:if="${!evento.fotos.isEmpty()}">Fotografías</h2>
+                <div class="galeria">
+                    <figure th:each="f : ${evento.fotos}">
+                        <img th:with="rutaImagen=${@vistas.imagen(f.url)}" th:src="@{${rutaImagen}}" th:alt="${f.textoAlternativo}">
+                        <figcaption th:text="${f.textoAlternativo}">Foto</figcaption>
+                    </figure>
+                </div>
+
+                <!-- ============ [Privada] Agregar fotos y videos ============ -->
+                <section id="medios" class="bloque">
+                    <h2>Fotos y videos de la comunidad</h2>
+                    <p th:if="${medios.isEmpty()}" class="vacio">Aún no hay fotos ni videos de este evento. ¡Sube el primero!</p>
+                    <div class="galeria" th:unless="${medios.isEmpty()}">
+                        <figure th:each="m : ${medios}">
+                            <img th:if="${m.tipo == 'FOTO'}" th:src="@{/media/{id}(id=${m.id})}"
+                                 th:alt="${m.descripcion}" loading="lazy">
+                            <video th:if="${m.tipo == 'VIDEO'}" controls preload="metadata">
+                                <source th:src="@{/media/{id}(id=${m.id})}" th:type="${m.contentType}">
+                                Tu navegador no puede reproducir este video.
+                            </video>
+                            <figcaption>
+                                <span th:text="${m.descripcion}">Descripción</span>
+                                <span class="autor" th:text="'Subido por ' + ${m.autor}">Subido por usuario</span>
+                            </figcaption>
+                        </figure>
+                    </div>
+
+                    <div th:if="${okMedio}" class="alerta alerta--ok" role="status" th:text="${okMedio}"></div>
+                    <div th:if="${errorMedio}" class="alerta alerta--error" role="alert" th:text="${errorMedio}"></div>
+                    <div th:if="${param.archivoGrande}" class="alerta alerta--error" role="alert">
+                        El archivo supera el tamaño permitido (fotos 5 MB, videos 20 MB).
+                    </div>
+
+                    <!-- th:action agrega el token CSRF oculto también en formularios multipart -->
+                    <form id="form-medio" class="formulario caja" method="post" enctype="multipart/form-data"
+                          th:action="@{/evento/{id}/medios(id=${evento.id})}"
+                          data-max-foto="5242880" data-max-video="20971520">
+                        <h3>Agregar foto o video</h3>
+                        <div class="campo">
+                            <label for="archivo">Archivo (JPG o PNG hasta 5 MB · MP4 o WebM hasta 20 MB)</label>
+                            <input id="archivo" name="archivo" type="file" required
+                                   accept=".jpg,.jpeg,.png,.mp4,.webm,image/jpeg,image/png,video/mp4,video/webm">
+                        </div>
+                        <div class="campo">
+                            <label for="descripcion">Descripción</label>
+                            <input id="descripcion" name="descripcion" type="text" maxlength="150" required
+                                   placeholder="Ej: Final del torneo desde la galería" th:value="${descripcionMedio}">
+                        </div>
+                        <p id="error-archivo" class="alerta alerta--error" role="alert" hidden></p>
+                        <button type="submit" class="boton">Subir archivo</button>
+                    </form>
+                </section>
+
+                <!-- ============ [Privada] Comentar y valorar ============ -->
+                <section id="comentarios" class="bloque">
+                    <h2>Comentarios y valoraciones</h2>
+                    <p class="resumen-valoracion" th:if="${comentarios.total > 0}">
+                        <span class="estrellas" th:text="${@vistas.estrellas(comentarios.promedio)}">★★★★☆</span>
+                        <strong th:text="${comentarios.promedio}">4.5</strong> de 5
+                        <span class="seccion__nota" th:text="'(' + ${comentarios.total} + (${comentarios.total == 1} ? ' opinión)' : ' opiniones)')">(2 opiniones)</span>
+                    </p>
+
+                    <div th:if="${okComentario}" class="alerta alerta--ok" role="status" th:text="${okComentario}"></div>
+                    <div th:if="${errorComentario}" class="alerta alerta--error" role="alert" th:text="${errorComentario}"></div>
+
+                    <form class="formulario caja" method="post" th:object="${comentarioForm}"
+                          th:action="@{/evento/{id}/comentarios(id=${evento.id})}">
+                        <h3>Deja tu opinión</h3>
+                        <div class="campo">
+                            <label for="valoracion">Valoración</label>
+                            <select id="valoracion" th:field="*{valoracion}" required>
+                                <option value="">Selecciona…</option>
+                                <option value="5">★★★★★ Excelente</option>
+                                <option value="4">★★★★☆ Muy bueno</option>
+                                <option value="3">★★★☆☆ Bueno</option>
+                                <option value="2">★★☆☆☆ Regular</option>
+                                <option value="1">★☆☆☆☆ Malo</option>
+                            </select>
+                        </div>
+                        <div class="campo">
+                            <label for="texto">Comentario</label>
+                            <textarea id="texto" th:field="*{texto}" rows="3" maxlength="500" required
+                                      placeholder="¿Qué te pareció el evento?"></textarea>
+                        </div>
+                        <button type="submit" class="boton">Publicar comentario</button>
+                    </form>
+
+                    <p th:if="${comentarios.total == 0}" class="vacio">Todavía no hay comentarios. ¡Sé el primero en opinar!</p>
+                    <article class="comentario" th:each="c : ${comentarios.comentarios}">
+                        <header class="comentario__cabecera">
+                            <strong th:text="${c.autor}">usuario</strong>
+                            <span class="estrellas" th:text="${@vistas.estrellas(c.valoracion)}"
+                                  th:attr="aria-label=${c.valoracion} + ' de 5 estrellas'">★★★★★</span>
+                            <time class="seccion__nota" th:text="${#temporals.format(c.fecha, 'dd-MM-yyyy HH:mm')}">fecha</time>
+                        </header>
+                        <p class="comentario__texto" th:text="${c.texto}">Texto del comentario</p>
+                        <form th:if="${c.propio}" method="post" class="comentario__acciones"
+                              th:action="@{/evento/{id}/comentarios/{cid}/eliminar(id=${evento.id},cid=${c.id})}">
+                            <button type="submit" class="boton boton--chico boton--borde">Eliminar</button>
+                        </form>
+                    </article>
+                </section>
+            </section>
+
+            <aside class="lateral">
+            <div class="ficha">
+                <h2>Datos del evento</h2>
+                <dl>
+                    <dt>Fecha y hora</dt>
+                    <dd th:text="${#temporals.format(evento.fechaHora, 'dd-MM-yyyy HH:mm')} + ' hrs.'">fecha</dd>
+                    <dt>Videojuego</dt>
+                    <dd th:text="${evento.videojuego}">juego</dd>
+                    <dt>Lugar</dt>
+                    <dd th:text="${evento.ciudad} + ', ' + ${evento.pais}">ciudad</dd>
+                    <th:block th:if="${evento.ubicacion}">
+                        <dt>Ubicación</dt>
+                        <dd th:text="${evento.ubicacion}">ubicación</dd>
+                    </th:block>
+                    <th:block th:with="enlace=${@vistas.enlaceSeguro(evento.enlaceAcceso)}">
+                        <th:block th:if="${enlace}">
+                            <dt>Enlace de acceso</dt>
+                            <dd><a th:href="${enlace}" th:text="${enlace}" target="_blank"
+                                   rel="noopener noreferrer">enlace</a></dd>
+                        </th:block>
+                    </th:block>
+                    <dt>Organizador</dt>
+                    <dd th:text="${evento.organizador}">organizador</dd>
+                    <dt>Cupos</dt>
+                    <dd th:text="${evento.inscritos} + ' de ' + ${evento.cupos} + ' inscritos'">cupos</dd>
+                </dl>
+                <a class="boton boton--ancho" th:href="@{/buscar}">Volver a la búsqueda</a>
+            </div>
+
+            <!-- ============ [Privada] Compartir en el sitio y en redes sociales ============ -->
+            <section id="compartir" class="ficha">
+                <h2>Compartir este evento</h2>
+                <p class="seccion__nota"
+                   th:text="'Compartido ' + ${compartidos.total} + (${compartidos.total == 1} ? ' vez' : ' veces')">Compartido 0 veces</p>
+
+                <div th:if="${okCompartir}" class="alerta alerta--ok" role="status">
+                    <span th:text="${okCompartir}">Listo</span>
+                    <a th:if="${enlaceExterno}" class="boton boton--chico boton--ancho enlace-externo"
+                       th:href="${enlaceExterno}" target="_blank" rel="noopener noreferrer"
+                       th:text="'Abrir ' + ${@vistas.nombreDestino(redExterna)}">Abrir red social</a>
+                </div>
+                <div th:if="${errorCompartir}" class="alerta alerta--error" role="alert" th:text="${errorCompartir}"></div>
+
+                <form method="post" class="formulario formulario--compacto"
+                      th:action="@{/evento/{id}/compartir(id=${evento.id})}">
+                    <input type="hidden" name="destino" value="SITIO">
+                    <div class="campo">
+                        <label for="mensaje">Mensaje para el muro (opcional)</label>
+                        <textarea id="mensaje" name="mensaje" rows="2" maxlength="280"
+                                  placeholder="Ej: ¿Quién se anima a ir?"></textarea>
+                    </div>
+                    <button type="submit" class="boton boton--ancho">Publicar en el muro</button>
+                </form>
+
+                <p class="seccion__nota redes__titulo">O compártelo en redes sociales:</p>
+                <div class="redes">
+                    <form th:each="red : ${ {'FACEBOOK', 'X', 'WHATSAPP'} }" method="post"
+                          th:action="@{/evento/{id}/compartir(id=${evento.id})}">
+                        <input type="hidden" name="destino" th:value="${red}">
+                        <button type="submit" class="boton boton--chico boton--borde"
+                                th:text="${@vistas.nombreDestino(red)}">Red</button>
+                    </form>
+                </div>
+
+                <div class="campo enlace-evento">
+                    <label for="url-evento">Enlace del evento</label>
+                    <input id="url-evento" type="text" readonly th:value="${urlEvento}">
+                </div>
+            </section>
+            </aside>
+        </div>
+    </article>
+</main>
+
+<footer th:replace="~{fragmentos :: pie}"></footer>
+<script th:src="@{/js/medios.js}" defer></script>
+</body>
+</html>

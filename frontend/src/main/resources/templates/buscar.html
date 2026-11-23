@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos :: cabecera('Buscar eventos')}"></head>
+<body>
+<header th:replace="~{fragmentos :: menu}"></header>
+
+<main class="contenedor">
+    <section class="seccion">
+        <h1>Buscar eventos</h1>
+        <p class="subtitulo">Filtra por nombre, videojuego, categoría, lugar, fecha o modalidad.</p>
+
+        <form class="filtros" th:action="@{/buscar}" method="get" th:object="${filtro}" role="search">
+            <div class="campo">
+                <label for="nombre">Nombre</label>
+                <input id="nombre" type="text" th:field="*{nombre}" maxlength="60" placeholder="Ej: Copa Imperium">
+            </div>
+            <div class="campo">
+                <label for="videojuego">Videojuego</label>
+                <select id="videojuego" th:field="*{videojuego}">
+                    <option value="">Todos</option>
+                    <option th:each="v : ${opciones.videojuegos}" th:value="${v}" th:text="${v}"></option>
+                </select>
+            </div>
+            <div class="campo">
+                <label for="categoria">Tipo o categoría</label>
+                <select id="categoria" th:field="*{categoria}">
+                    <option value="">Todas</option>
+                    <option th:each="c : ${opciones.categorias}" th:value="${c}" th:text="${c}"></option>
+                </select>
+            </div>
+            <div class="campo">
+                <label for="pais">País</label>
+                <select id="pais" th:field="*{pais}">
+                    <option value="">Todos</option>
+                    <option th:each="p : ${opciones.paises}" th:value="${p}" th:text="${p}"></option>
+                </select>
+            </div>
+            <div class="campo">
+                <label for="ciudad">Ciudad</label>
+                <select id="ciudad" th:field="*{ciudad}">
+                    <option value="">Todas</option>
+                    <option th:each="c : ${opciones.ciudades}" th:value="${c}" th:text="${c}"></option>
+                </select>
+            </div>
+            <div class="campo">
+                <label for="fecha">Fecha</label>
+                <input id="fecha" type="date" th:field="*{fecha}">
+            </div>
+            <div class="campo">
+                <label for="modalidad">Modalidad</label>
+                <select id="modalidad" th:field="*{modalidad}">
+                    <option value="">Todas</option>
+                    <option value="PRESENCIAL">Presencial</option>
+                    <option value="ONLINE">Online</option>
+                </select>
+            </div>
+            <div class="filtros__acciones">
+                <button type="submit" class="boton">Buscar</button>
+                <a class="boton boton--borde" th:href="@{/buscar}">Limpiar</a>
+            </div>
+        </form>
+    </section>
+
+    <div th:replace="~{fragmentos :: avisoBackend}"></div>
+    <div th:if="${filtroInvalido}" class="alerta alerta--error" role="alert">
+        Algunos filtros no son válidos. Revisa los valores ingresados.
+    </div>
+
+    <section class="seccion">
+        <h2 th:text="${buscado} ? 'Resultados (' + ${resultados.size()} + ')' : 'Todos los eventos'">Resultados</h2>
+        <p th:if="${resultados.isEmpty() and filtroInvalido != true}" class="vacio">
+            No encontramos eventos con esos filtros.
+        </p>
+        <div class="grilla">
+            <th:block th:each="e : ${resultados}"><article th:replace="~{fragmentos :: tarjeta(${e})}"></article></th:block>
+        </div>
+    </section>
+</main>
+
+<footer th:replace="~{fragmentos :: pie}"></footer>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Supresiones de OWASP Dependency-Check (alternativa 4: falsos positivos para ESTA aplicación).
+
+  Criterio: solo se suprime un CVE cuando
+    1) no existe una versión corregida gratuita en la rama usada (Spring Framework 6.2.19 y
+       Spring Security 6.5.11 son las últimas versiones open source de sus ramas), y
+    2) la funcionalidad vulnerable NO se usa ni está en el classpath de la aplicación
+       (verificado con "mvn dependency:tree" y búsqueda en el código fuente).
+
+  Cada supresión:
+    - se limita a la rama de la librería analizada (si se actualiza la versión, vuelve a evaluarse);
+    - vence el 2027-03-31 ("until"): pasada esa fecha el CVE vuelve a aparecer y debe revisarse.
+-->
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+
+    <suppress until="2027-03-31Z">
+        <notes>CVE-2026-47884 (XsltView, SSRF/RCE): la aplicación no usa XsltView ni vistas XSLT.
+            El backend es una API REST que responde JSON y el frontend usa Thymeleaf.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring-.*@6\.2\..*$</packageUrl>
+        <cve>CVE-2026-47884</cve>
+    </suppress>
+
+    <suppress until="2027-03-31Z">
+        <notes>CVE-2026-47890 y CVE-2026-59313 (Server-Sent Events): la aplicación no usa SSE
+            (no hay SseEmitter ni respuestas text/event-stream) ni el framework web funcional.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring-.*@6\.2\..*$</packageUrl>
+        <cve>CVE-2026-47890</cve>
+        <cve>CVE-2026-59313</cve>
+    </suppress>
+
+    <suppress until="2027-03-31Z">
+        <notes>CVE-2026-47891 (WebFlux + Aalto XML): la aplicación usa Spring MVC (servlet), no WebFlux,
+            y la librería Aalto XML no está en el classpath (verificado con dependency:tree).</notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring-.*@6\.2\..*$</packageUrl>
+        <cve>CVE-2026-47891</cve>
+    </suppress>
+
+    <suppress until="2027-03-31Z">
+        <notes>CVE-2026-47892 (endpoints funcionales de WebFlux): la aplicación no usa WebFlux ni
+            RouterFunction; todos los endpoints son controladores anotados (@RestController/@Controller).</notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring-.*@6\.2\..*$</packageUrl>
+        <cve>CVE-2026-47892</cve>
+    </suppress>
+
+    <suppress until="2027-03-31Z">
+        <notes>CVE-2026-59283 (SpEL SimpleEvaluationContext con compilador activo): la aplicación no evalúa
+            expresiones SpEL con SimpleEvaluationContext ni activa spring.expression.compiler.mode
+            (el compilador de SpEL está desactivado por defecto).</notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring-.*@6\.2\..*$</packageUrl>
+        <cve>CVE-2026-59283</cve>
+    </suppress>
+
+    <suppress until="2027-03-31Z">
+        <notes>CVE-2026-59270 (servidor LDAP embebido UnboundIdContainer): la aplicación no usa LDAP;
+            spring-security-ldap y UnboundID no están en el classpath (verificado con dependency:tree).
+            La autenticación es por usuario/contraseña BCrypt contra la base de datos y JWT.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.security/spring-security-.*@6\.5\..*$</packageUrl>
+        <cve>CVE-2026-59270</cve>
+    </suppress>
+
+</suppressions>

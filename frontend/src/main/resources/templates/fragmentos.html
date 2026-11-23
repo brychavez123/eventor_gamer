@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:fragment="cabecera(titulo)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Encuentra torneos, LAN parties y meetups de juegos de estrategia.">
+    <title th:text="${titulo} + ' | Arena Estratega'">Arena Estratega</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/img/logo.svg}">
+    <link rel="stylesheet" th:href="@{/css/estilos.css}">
+</head>
+
+<body>
+
+<header th:fragment="menu" class="barra">
+    <div class="contenedor barra__interior">
+        <a class="marca" th:href="@{/}">
+            <img th:src="@{/img/logo.svg}" alt="" width="36" height="36">
+            <span>Arena <strong>Estratega</strong></span>
+        </a>
+        <nav class="menu" aria-label="Navegación principal">
+            <a th:href="@{/}">Inicio</a>
+            <a th:href="@{/buscar}">Buscar eventos</a>
+            <a sec:authorize="isAuthenticated()" th:href="@{/compartidos}">Comunidad</a>
+            <a sec:authorize="!isAuthenticated()" class="boton boton--chico" th:href="@{/login}">Iniciar sesión</a>
+            <span sec:authorize="isAuthenticated()" class="menu__usuario">
+                Hola, <strong sec:authentication="name">usuario</strong>
+            </span>
+            <form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post" class="menu__salir">
+                <button type="submit" class="boton boton--chico boton--borde">Cerrar sesión</button>
+            </form>
+        </nav>
+    </div>
+</header>
+
+<article th:fragment="tarjeta(e)" class="tarjeta">
+    <a class="tarjeta__enlace" th:href="@{/evento/{id}(id=${e.id})}">
+        <img class="tarjeta__imagen" th:with="rutaImagen=${@vistas.imagen(e.imagenPortada)}" th:src="@{${rutaImagen}}" alt="">
+        <div class="tarjeta__cuerpo">
+            <div class="etiquetas">
+                <span class="etiqueta" th:text="${e.categoria}">Torneo</span>
+                <span class="etiqueta"
+                      th:classappend="${e.modalidad == 'ONLINE'} ? 'etiqueta--online' : 'etiqueta--presencial'"
+                      th:text="${@vistas.modalidad(e.modalidad)}">Presencial</span>
+            </div>
+            <h3 class="tarjeta__titulo" th:text="${e.nombre}">Nombre del evento</h3>
+            <p class="tarjeta__juego" th:text="${e.videojuego}">Videojuego</p>
+            <p class="tarjeta__texto" th:text="${e.descripcionCorta}">Descripción corta</p>
+            <ul class="datos">
+                <li>
+                    <span th:text="${#temporals.format(e.fechaHora, 'dd-MM-yyyy HH:mm')}">01-01-2026</span></li>
+                <li>
+                    <span th:text="${e.ciudad} + ', ' + ${e.pais}">Ciudad, País</span></li>
+                <li>
+                    <span th:text="${e.inscritos} + ' inscritos'">0 inscritos</span></li>
+            </ul>
+            <span class="tarjeta__accion">Ver detalle &rarr;</span>
+        </div>
+    </a>
+</article>
+
+<div th:fragment="avisoBackend" th:if="${avisoBackend}" class="alerta alerta--error" role="alert">
+    No pudimos cargar los eventos en este momento. Intenta nuevamente en unos minutos.
+</div>
+
+<footer th:fragment="pie" class="pie">
+    <div class="contenedor pie__interior">
+        <p>Arena Estratega &middot; Comunidad de eventos de juegos de estrategia</p>
+        <p class="pie__secundario">Seguridad y calidad en el desarrollo de software &middot; ISY2202
+            &middot; <a th:href="@{/img/creditos.txt}">Créditos de las fotos</a></p>
+    </div>
+</footer>
+
+</body>
+</html>

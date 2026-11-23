@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragmentos :: cabecera('Inicio')}"></head>
+<body>
+<header th:replace="~{fragmentos :: menu}"></header>
+
+<main>
+    <section class="portada">
+        <div class="contenedor portada__interior">
+            <div>
+                <p class="portada__antetitulo">Torneos &middot; LAN parties &middot; Meetups</p>
+                <h1>Los eventos de estrategia de tu comunidad, en un solo lugar</h1>
+                <p class="portada__texto">Desde asedios en Stronghold hasta batallas en Rome: Total War.
+                    Encuentra el próximo evento, revisa los requisitos e inscríbete.</p>
+                <div class="portada__acciones">
+                    <a class="boton" th:href="@{/buscar}">Buscar eventos</a>
+                    <a sec:authorize="!isAuthenticated()" class="boton boton--borde" th:href="@{/login}">Iniciar sesión</a>
+                </div>
+            </div>
+            <img class="portada__imagen" th:src="@{/img/portada.jpg}" alt="">
+        </div>
+    </section>
+
+    <div class="contenedor">
+        <div th:if="${param.salir}" class="alerta alerta--ok" role="status">Cerraste sesión correctamente.</div>
+        <div th:replace="~{fragmentos :: avisoBackend}"></div>
+
+        <section th:if="${!banners.isEmpty()}" class="seccion" aria-label="Avisos comerciales">
+            <div class="banners">
+                <aside th:each="b : ${banners}" class="banner">
+                    <img th:with="rutaImagen=${@vistas.imagen(b.imagen)}" th:src="@{${rutaImagen}}" alt="" class="banner__imagen">
+                    <div class="banner__texto">
+                        <span class="banner__aviso">Aviso</span>
+                        <h2 th:text="${b.titulo}">Título del aviso</h2>
+                        <p th:text="${b.texto}">Texto del aviso</p>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <section class="seccion">
+            <div class="seccion__cabecera">
+                <h2>Eventos más recientes</h2>
+                <a th:href="@{/buscar}">Ver todos &rarr;</a>
+            </div>
+            <p th:if="${recientes.isEmpty()}" class="vacio">Aún no hay eventos publicados.</p>
+            <div class="grilla">
+                <th:block th:each="e : ${recientes}"><article th:replace="~{fragmentos :: tarjeta(${e})}"></article></th:block>
+            </div>
+        </section>
+
+        <section class="seccion">
+            <div class="seccion__cabecera">
+                <h2>Más populares</h2>
+                <span class="seccion__nota">Ordenados por cantidad de inscritos</span>
+            </div>
+            <div class="grilla">
+                <th:block th:each="e : ${populares}"><article th:replace="~{fragmentos :: tarjeta(${e})}"></article></th:block>
+            </div>
+        </section>
+
+        <section sec:authorize="!isAuthenticated()" class="llamado">
+            <h2>¿Quieres ver la ubicación, requisitos e inscripción?</h2>
+            <p>El detalle completo de cada evento está disponible para usuarios registrados.</p>
+            <a class="boton" th:href="@{/login}">Iniciar sesión</a>
+        </section>
+    </div>
+</main>
+
+<footer th:replace="~{fragmentos :: pie}"></footer>
+</body>
+</html>

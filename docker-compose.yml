@@ -1,0 +1,97 @@
+# Despliegue completo de Eventos Gamer con Docker
+#   docker compose up -d --build
+#   Abrir: https://localhost/eventos   (o https://[IP-del-equipo]/eventos)
+#
+# Arquitectura (igual a la semana 2): nginx -> frontend (Thymeleaf) -> backend (API JWT) -> MySQL
+# Los secretos se leen desde el archivo .env (ver .env.example); no se escriben aquí.
+
+services:
+  db:
+    image: mysql:8.4
+    container_name: eventos-db
+    restart: unless-stopped
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Definir MYSQL_ROOT_PASSWORD en .env}
+      MYSQL_DATABASE: eventos_gamer
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?Definir DB_APP_PASSWORD en .env}
+      TZ: America/Santiago
+    volumes:
+      # Esquema y datos: los mismos archivos que usa el backend (una sola fuente de verdad)
+      - ./backend/src/main/resources/schema.sql:/semilla/schema.sql:ro
+      - ./backend/src/main/resources/data.sql:/semilla/data.sql:ro
+      - ./db/02_cargar_datos.sh:/docker-entrypoint-initdb.d/02_cargar_datos.sh:ro
+      - ./db/03_usuario_app.sh:/docker-entrypoint-initdb.d/03_usuario_app.sh:ro
+      - datos-mysql:/var/lib/mysql
+    networks: [interna]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    # Sin "ports": la base de datos no queda expuesta fuera de Docker.
+
+  backend:
+    build: ./backend
+    container_name: eventos-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:mysql://db:3306/eventos_gamer?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Santiago&characterEncoding=UTF-8
+      DB_USER: eventos_app
+      DB_PASSWORD: ${DB_APP_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?Definir JWT_SECRET en .env}
+      SPRING_PROFILES_ACTIVE: ${PERFIL_SEGURIDAD:-default}
+      TZ: America/Santiago
+    networks: [interna]
+
+  frontend:
+    build: ./frontend
+    container_name: eventos-frontend
+    restart: unless-stopped
+    depends_on: [backend]
+    environment:
+      BACKEND_URL: http://backend:8080
+      # URL pública usada en los enlaces para compartir en redes sociales (ej: https://203.0.113.10/eventos)
+      URL_PUBLICA: ${URL_PUBLICA:-https://localhost/eventos}
+      SPRING_PROFILES_ACTIVE: ${PERFIL_SEGURIDAD:-default}
+      TZ: America/Santiago
+    networks: [interna]
+
+  # Genera (solo la primera vez) un certificado autofirmado para HTTPS local.
+  # En un servidor real se reemplaza por un certificado de una CA (por ejemplo Let's Encrypt).
+  certificado:
+    image: alpine/openssl:latest
+    container_name: eventos-certificado
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        [ -f /certs/tls.crt ] || openssl req -x509 -newkey rsa:2048 -nodes -days 730
+        -subj "/CN=localhost" -keyout /certs/tls.key -out /certs/tls.crt
+    volumes:
+      - certs:/certs
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: eventos-nginx
+    restart: unless-stopped
+    depends_on:
+      frontend: { condition: service_started }
+      backend: { condition: service_started }
+      certificado: { condition: service_completed_successfully }
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/${NGINX_CONF:-nginx.conf}:/etc/nginx/conf.d/default.conf:ro
+      - certs:/etc/nginx/certs:ro
+    networks: [interna]
+
+networks:
+  interna:
+
+volumes:
+  datos-mysql:
+  certs:

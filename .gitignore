@@ -1,0 +1,17 @@
+# Secretos (claves de MySQL y JWT): nunca se suben
+.env
+
+# Compilados de Maven
+**/target/
+
+# Captura original de la clave del NVD sin tapar (en el repositorio va la versión con la clave oculta:
+# docs/evidencias/semana5/capturas/e01_nvd_api_key.png)
+docs/evidencias/semana5/01_nvd_api_key_generada.png
+
+# Archivos del IDE y del sistema
+.idea/
+.vscode/
+*.iml
+*.log
+.DS_Store
+Thumbs.db

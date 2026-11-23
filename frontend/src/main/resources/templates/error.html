@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos :: cabecera('Error')}"></head>
+<body>
+<header th:replace="~{fragmentos :: menu}"></header>
+
+<main class="contenedor contenedor--angosto">
+    <section class="panel panel--centro">
+        <p class="codigo-error" th:text="${status}">404</p>
+        <h1 th:switch="${status}">
+            <span th:case="404">No encontramos lo que buscas</span>
+            <span th:case="403">No tienes acceso a esta página</span>
+            <span th:case="503">El servicio no está disponible</span>
+            <span th:case="*">Ocurrió un problema</span>
+        </h1>
+        <p class="subtitulo">Vuelve al inicio o intenta nuevamente en unos minutos.</p>
+        <a class="boton" th:href="@{/}">Volver al inicio</a>
+        <!-- Solo aparece si el servidor está configurado para incluir la traza (perfil "inseguro") -->
+        <pre th:if="${trace}" class="traza" th:text="${trace}"></pre>
+    </section>
+</main>
+
+<footer th:replace="~{fragmentos :: pie}"></footer>
+</body>
+</html>
